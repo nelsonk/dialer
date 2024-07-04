@@ -1,13 +1,17 @@
-
-import sys
-from dbWork import dbWork
-from models import Db
-from datetime import datetime, timedelta
 import configparser
 import socket
 import time
 import functools
+import sys
 
+from datetime import datetime, timedelta
+
+#imports from project
+from dialer.database.dbWork import dbWork
+from dialer.database.models import Db
+
+
+#seperate imports and method with 2 lines
 def timerDecorator(func):
     @functools.wraps(func)
     def decorate(args):
@@ -15,6 +19,7 @@ def timerDecorator(func):
         func()
         print("Ending testing Decorator")
     return decorate
+
 
 class Call:
     def __init__(self):

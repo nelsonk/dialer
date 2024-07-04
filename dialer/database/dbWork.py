@@ -1,4 +1,4 @@
-from models import record, Db
+from dialer.database.models import record, Db
 from datetime import datetime
 from peewee import fn, chunked, NodeList, SQL
 
