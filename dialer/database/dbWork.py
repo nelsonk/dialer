@@ -3,7 +3,7 @@ from datetime import datetime
 from peewee import fn, chunked, NodeList, SQL
 
 
-class dbWork():
+class dbWork:
     def __init__(self):
         self.bath_size = 1000
 
