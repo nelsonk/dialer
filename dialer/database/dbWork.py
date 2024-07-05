@@ -1,11 +1,13 @@
-from dialer.database.models import record, Db
 from datetime import datetime
 from peewee import fn, chunked, NodeList, SQL
 
+from dialer.database.models import record
+from dialer.settings import Db, batch_size
 
-class dbWork:
+
+class DbWork:
     def __init__(self):
-        self.bath_size = 1000
+        self.bath_size = batch_size
 
     def get(self):
         now = datetime.now().strftime('%Y-%m-%d %H')
@@ -13,23 +15,23 @@ class dbWork:
         records = record.select(record.id, record.number, record.type, record.level, record.language).where((record.run_on == now) | (record.retry == now) | (record.run_on.is_null(True))).dicts().iterator()
         return records
     
-    def initialUpdate(self, id):
+    def initial_update(self, id):
         with Db.atomic():
-            interval = NodeList((SQL('INTERVAL'), 7, SQL('DAY')))
-            retryInterval = NodeList((SQL('INTERVAL'), 1, SQL('DAY')))
-            myupdate = record.update(retry = fn.date_add(record.run_on, retryInterval), run_on = fn.date_add(record.run_on, interval)).where(record.id == id).execute()
-        return print(myupdate," record/s updated")
+            run_on_interval = NodeList((SQL('INTERVAL'), 7, SQL('DAY')))
+            retry_on_interval = NodeList((SQL('INTERVAL'), 1, SQL('DAY')))
+            my_update = record.update(retry = fn.date_add(record.run_on, retry_on_interval), run_on = fn.date_add(record.run_on, run_on_interval)).where(record.id == id).execute()
+        return print(my_update," record/s updated")
     
-    def finalUpdate(self, mynumber, mydialer, dateOrStatus="successful"):
-        myupdate = 0
-        if dateOrStatus == "successful":
+    def final_update(self, my_number, my_dialer, date_or_status="successful"):
+        my_update = 0
+        if date_or_status == "successful":
             with Db.atomic():
-                myupdate = record.update(retry = None, level = record.level + 1).where((record.number == mynumber) & (record.dialer == mydialer)).execute()
+                my_update = record.update(retry = None, level = record.level + 1).where((record.number == my_number) & (record.dialer == my_dialer)).execute()
         else:
-            if dateOrStatus is not None:
+            if date_or_status is not None:
                 with Db.atomic():
-                    myupdate = record.update(run_on = dateOrStatus, level = 1).where((record.number == mynumber) & (record.dialer == mydialer)).execute()
-        return print(myupdate," record/s updated")  
+                    my_update = record.update(run_on = date_or_status, level = 1).where((record.number == my_number) & (record.dialer == my_dialer)).execute()
+        return print(my_update," record/s updated")  
     
     def insert(self, data):
         if not isinstance(data, list):

@@ -1,4 +1,3 @@
-import configparser
 import socket
 import time
 import functools
@@ -7,12 +6,13 @@ import sys
 from datetime import datetime, timedelta
 
 #imports from project
-from dialer.database.dbWork import dbWork
-from dialer.database.models import Db
+from dialer.database.dbwork import DbWork
+#from dialer.settings import *
+import dialer.settings as settings
 
 
-#seperate imports and method with 2 lines
-def timerDecorator(func):
+#seperate imports and class with 2 lines
+def timer_decorator(func):
     @functools.wraps(func)
     def decorate(args):
         print("Testing Decorator")
@@ -23,36 +23,33 @@ def timerDecorator(func):
 
 class Call:
     def __init__(self):
-        self.logfile = "/Users/nelson.kanyali/Documents/dockertest/python/dialer/finance.log" #change this
-        self.base_date = datetime(2024, 5, 26) #change this, start date for compaign
-        self.dialer = "finance"
-        config = configparser.ConfigParser()
-        config.read('database.ini')
+        self.log_file = settings.asterisk_log_file
+        self.base_date = settings.campaign_starts_on
+        self.dialer = settings.dialer_name
         self.counter = 0
         self.sock = None
-        self.amiUsername = config['ami']['username']
-        self.amiPassword = config['ami']['password']
-        self.amiPort = config['ami']['port']
-        self.amiServer = config['ami']['server']
-        self.target = 999
-        self.context = "marketing_dialer"
+        self.ami_username = settings.ami_username
+        self.ami_password = settings.ami_password
+        self.ami_port = settings.ami_port
+        self.ami_server = settings.ami_server
+        self.extension = settings.dialplan_target_extension
+        self.context = settings.dialplan_context
+        self.closing_time = settings.stop_calling_at
+        self.opening_time = settings.start_calling_at
 
-    def checkTime(self, task):
+    def check_time(self, task):
         current_time = datetime.now().hour
-        if task == "call" and current_time > 19 and current_time < 7:
-            print("Not allowed to run at this time")
-            sys.exit(1)
-        elif task == "file" and current_time < 22 and current_time > 7:
+        if task == "call" and current_time > self.closing_time or current_time < self.opening_time:
             print("Not allowed to run at this time")
             sys.exit(1)
         else:
             pass
 
-    #@timerDecorator
-    def readFile(self):
-        with open(self.logfile, 'r') as file:
+    #@timer_decorator
+    def read_file(self):
+        with open(self.log_file, 'r') as file:
             for line in file:
-                self.checkTime("file")
+                self.check_time("file")
                 values = [value.strip() for value in line.strip().split(',')]
                 day = None
                 time = None
@@ -67,25 +64,25 @@ class Call:
                     delta = timedelta(days=day)
                     new_date = (self.base_date + delta).date()
                     run_on = f"{new_date} {time}:00:00"
-                    dbWork().finalUpdate(number[-9:], self.dialer, run_on)
+                    DbWork().final_update(number[-9:], self.dialer, run_on)
                 elif int(duration) > 10:
-                    dbWork().finalUpdate(number[-9:], self.dialer)
+                    DbWork().final_update(number[-9:], self.dialer)
                 else:
                     print(f"failed call atempt for {number[-9:]}, not updating DB")
                 self.counter += 1
         return print(f"{self.counter} records updated")
 
-    def establishSocket(self):
+    def establish_socket(self):
         try:
-            self.sock = socket.create_connection((self.amiServer, self.amiPort))
+            self.sock = socket.create_connection((self.ami_server, self.ami_port))
             # Prepare authentication request
-            authenticationRequest = (
+            authentication_request = (
                 "Action: Login\r\n"
-                f"Username: {self.amiUsername}\r\n"
-                f"Secret: {self.amiPassword}\r\n"
+                f"Username: {self.ami_username}\r\n"
+                f"Secret: {self.ami_password}\r\n"
                 "Events: off\r\n\r\n"
             )
-            self.sock.sendall(authenticationRequest.encode())
+            self.sock.sendall(authentication_request.encode())
             time.sleep(0.2)
             response = self.sock.recv(4096).decode()
             if 'Success' in response:
@@ -98,61 +95,61 @@ class Call:
             status = f"Socket send error: {e}"
         return status
 
-    def initiateCall(self,orignateRequests, retry=0):
-        ourRequest = orignateRequests
+    def initiate_call(self,orignate_requests, retry=0):
+        our_request = orignate_requests
         try:
-            self.sock.sendall(ourRequest.encode())
+            self.sock.sendall(our_request.encode())
             time.sleep(1)
-            orignateResponse = self.sock.recv(4096).decode()
-            if "Success" in orignateResponse:
+            orignate_response = self.sock.recv(4096).decode()
+            if "Success" in orignate_response:
                 return "Successful"
             else:
                 if retry < 3:
                     print("Failed to initiate call, trying again")
-                    return self.initiateCall(ourRequest, retry + 1)
+                    return self.initiate_call(our_request, retry + 1)
         except socket.timeout:
             if retry < 3:
                 print(f"Failed to send Originate request, Socket Timed out")
-                return self.initiateCall(ourRequest, retry + 1)
+                return self.initiate_call(our_request, retry + 1)
         except socket.error as e:
             if retry < 3:
                 print(f"Failed to send Originate request, Socket send error: {e}")
-                return self.initiateCall(ourRequest, retry + 1)
+                return self.initiate_call(our_request, retry + 1)
         return "Maximum retries reached, call origination failed"
 
     #@timerDecorator
     def call(self):
-        records = dbWork().get()
-        status = self.establishSocket()
+        records = DbWork().get()
+        status = self.establish_socket()
         print(status)
         if status == "Connected":
             for record in records:
-                self.checkTime("call")
-                recordId = record["id"]
-                recordNumber = str(record["number"])
-                recordLanguage = record["language"]
-                recordLevel = record["level"]
-                recordType = record["type"]
-                mychannel = f"Local/0{recordNumber[-9:]}@from-internal"
+                self.check_time("call")
+                record_id = record["id"]
+                record_number = str(record["number"])
+                record_language = record["language"]
+                record_level = record["level"]
+                record_type = record["type"]
+                my_channel = f"Local/0{record_number[-9:]}@from-internal"
 
                 #Prepare originate request
-                originateRequest = (
+                originate_request = (
                     "Action: Originate\r\n"
-                    f"Channel: {mychannel}\r\n"
-                    f"Variable: clid=0{recordNumber[-9:]}\r\n"
+                    f"Channel: {my_channel}\r\n"
+                    f"Variable: clid=0{record_number[-9:]}\r\n"
                     f"Variable: dialer={self.dialer}\r\n"
-                    f"Variable: language={recordLanguage}\r\n"
-                    f"Variable: level={recordLevel}\r\n"
-                    f"Variable: type={recordType}\r\n"
+                    f"Variable: language={record_language}\r\n"
+                    f"Variable: level={record_level}\r\n"
+                    f"Variable: type={record_type}\r\n"
                     "Callerid: \r\n"
-                    f"Exten: {self.target}\r\n"
+                    f"Exten: {self.extension}\r\n"
                     f"Context: {self.context}\r\n"
                     "Priority: 1\r\n"
                     "Async: true\r\n\r\n"
                 )
-                self.initiateCall(originateRequest)
-                if int(recordLevel) > 0:
-                    dbWork().initialUpdate(recordId)
+                self.initiate_call(originate_request)
+                if int(record_level) > 0:
+                    DbWork().initial_update(record_id)
                 self.counter += 1
                 time.sleep(10)
             self.sock.close()
@@ -163,8 +160,8 @@ if __name__ == "__main__":
     search = False
     call = Call()
     if len(sys.argv) > 1:
-        call.readFile()
+        call.read_file()
     else:
         call.call()   
-    Db.close()
+    settings.Db.close()
     sys.exit(0)
