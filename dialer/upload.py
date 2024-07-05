@@ -3,7 +3,7 @@
 import sys
 import csv
 import os
-from dbWork import dbWork
+from dialer.database.dbWork import dbWork
 
 class upLoad:
     def __init__(self):
