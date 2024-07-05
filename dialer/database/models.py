@@ -1,23 +1,10 @@
-import configparser
 from peewee import *
 
-config = configparser.ConfigParser()
-config.read('database.ini')
+from dialer.settings import Db
 
-mydatabase = config['dialer']['database']
-myhost = config['dialer']['host']
-myuser = config['dialer']['user']
-mypassword = config['dialer']['password']
-myport = config['dialer'].getint('port', 3306)
-
-Db = MySQLDatabase(mydatabase,
-                   host = myhost,
-                   user = myuser,
-                   passwd = mypassword,
-                   port = myport)
 
 class BaseModel(Model):
-    class Meta():
+    class Meta:
         database = Db
 
 class record(BaseModel):

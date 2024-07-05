@@ -2,33 +2,35 @@
 
 import sys
 import csv
-import os
-from dialer.database.dbWork import dbWork
 
-class upLoad:
+from dialer.database.dbwork import DbWork
+
+
+class Upload:
     def __init__(self):
-        self.recordsList = []
+        self.records_list = []
 
-    def unpackFile(self, file, dialername):
-        with open(file, 'r') as infile:
-            read = csv.reader(infile)
+    def unpack_file(self, file, dialer_name):
+        with open(file, 'r') as in_file:
+            read = csv.reader(in_file)
             next(read) #ignore first row
             for row in read:
-                mydict = {"number": row[0], "dialer": dialername, "language": row[1], "type": row[2], "level": 0}
-                self.recordsList.append(mydict)
-        return self.recordsList
+                my_dict = {"number": row[0], "dialer": dialer_name, "language": row[1], "type": row[2], "level": 0}
+                self.records_list.append(my_dict)
+        return self.records_list
 
-    def dbUpload(self, data):
-        result = dbWork().insert(data)
+    def db_upload(self, data):
+        result = DbWork().insert(data)
         return result
 
+
 if __name__ == "__main__": 
-    upload = upLoad()
+    upload = Upload()
     try:
         file = sys.argv[1]
-        dialerName = sys.argv[2]
+        dialer_name = sys.argv[2]
     except:
         raise Exception("Some arguments not passed")
 
-    mylist = upload.unpackFile(file, dialerName)
-    upload.dbUpload(mylist)
+    my_list = upload.unpack_file(file, dialer_name)
+    upload.db_upload(my_list)
