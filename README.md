@@ -1,8 +1,10 @@
 Auto-Training Dialer
+
 Automate customer trainings over the phone with no human intervention.
 
 
 Overview:
+
 This system automates calls to customers throughout a campaign, scheduling diferent trainings per week depending on which level customer is on. Human intervention is only needed on initial upload of numbers.
 
 It involves using peewee to manage all database interactions, sockets for connection to Asterisk via AMI port to initiate calls, and reading a log file written by Asterisk to reschedule customer for another training or same training depending on whether they listened to previous training for at least a specified number of seconds.
@@ -13,8 +15,9 @@ Requirements:
 
 
 Installation:
-pip install peewee
-pip install pymysql
+
+- pip install peewee
+- pip install pymysql
 
 - Have your frontend application upload .csv file with columns in this order; phone_number, customer_language, campaign_type
     - training_level of 0 is auto assigned on initial upload
@@ -23,7 +26,8 @@ pip install pymysql
 - Have your application execute this script with full path to location of uploaded file and name of autodialer
     - The uploaded file is meant to be deleted by this script after reading it, make sure parent folder has (wx) permissions
 
-    Example
+    Example:
+
     /usr/bin/python3 upload.py $tmpFilePath $dialer_name
 
     - This script will read numbers from csv and upload to database.
