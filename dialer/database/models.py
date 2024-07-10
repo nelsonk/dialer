@@ -1,6 +1,6 @@
 from peewee import *
 
-from dialer.settings import Db
+from configs.settings import Db
 
 
 class BaseModel(Model):

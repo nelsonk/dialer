@@ -26,25 +26,33 @@ Installation:
 - Have your application execute this script with full path to location of uploaded file and name of autodialer
     - The uploaded file is meant to be deleted by this script after reading it, make sure parent folder has (wx) permissions
 
-    Example:
+        Example:
 
-    /usr/bin/python3 upload.py $tmpFilePath $dialer_name
+        /usr/bin/python3 upload.py $tmpFilePath $dialer_name
 
     - This script will read numbers from csv and upload to database.
 
 - Create cronjob that executes the calling script at top of hour to call all customers scheduled for that day that hour
 
-    0 7-18 * * * /usr/bin/python3 calllogic.py
+    0 7-18 * * * /usr/bin/python3 calllogic.py call dialer_name
 
-    - Calls are only initiatied from 7am to 7pm.
+    - Calls are only initiatied from 7am to 7pm. 
 
 - Create a cronjob that runs script that checks log file to see if a number was called and listened to a training recording for at least a specific number of seconds
 
-    0 22 * * * /usr/bin/python3 calllogic.py update
+    0 22 * * * /usr/bin/python3 calllogic.py update dialer_name
 
-    - This script is meant to run between 10pm and 7am when the server is less busy
 
 AMI & Database:
 - Add your database and AMI credentials in database.ini file
 - If these scripts are not running on same server having AMI & DB, make sure remote access is allowed.
+- Variables; clid (phone_number), dialer (name of autodialer), language, level (level of training whose recordings you should play, 0 is for week recording about when customer wants to be called), type (type of campaign incase one dialer is used for multiple campaigns)
+
+
+Settings:
+Go to configs/seetings.py to make changes to settings like:
+- Time frame script is allowed to call customers
+- Path to asterisk_log file
+- When campaign is supposed to start, this determines when customer calls are to be scheduled
+- You dialplan context & target where customer calls are supposed to sent on pickup, which should contain the logic for playing recordings etc
 
