@@ -5,13 +5,12 @@ import sys
 
 from datetime import datetime, timedelta
 
-#imports from project
-from dialer.database.dbwork import DbWork
+from database.dbwork import DbWork
 #from dialer.settings import *
-import dialer.settings as settings
+import configs.settings as settings
+from configs.logs_configs import Logger
 
 
-#seperate imports and class with 2 lines
 def timer_decorator(func):
     @functools.wraps(func)
     def decorate(args):
@@ -22,10 +21,10 @@ def timer_decorator(func):
 
 
 class Call:
-    def __init__(self):
-        self.log_file = settings.asterisk_log_file
+    def __init__(self, dialer_name):
         self.base_date = settings.campaign_starts_on
-        self.dialer = settings.dialer_name
+        self.dialer = dialer_name
+        self.log_file = settings.get_dialer_specific_configs(self.dialer)['asterisk_log_file']
         self.counter = 0
         self.sock = None
         self.ami_username = settings.ami_username
@@ -40,7 +39,7 @@ class Call:
     def check_time(self, task):
         current_time = datetime.now().hour
         if task == "call" and current_time > self.closing_time or current_time < self.opening_time:
-            print("Not allowed to run at this time")
+            log.error("Not allowed to run at this time")
             sys.exit(1)
         else:
             pass
@@ -49,7 +48,6 @@ class Call:
     def read_file(self):
         with open(self.log_file, 'r') as file:
             for line in file:
-                self.check_time("file")
                 values = [value.strip() for value in line.strip().split(',')]
                 day = None
                 time = None
@@ -59,6 +57,7 @@ class Call:
                     day = int(values[2])
                     time = values[3]
                 except:
+                    log.info(f"Some info for this call attempt is missing in the {self.log_file} file but is optional")
                     pass
                 if day is not None and time is not None:
                     delta = timedelta(days=day)
@@ -68,9 +67,9 @@ class Call:
                 elif int(duration) > 10:
                     DbWork().final_update(number[-9:], self.dialer)
                 else:
-                    print(f"failed call atempt for {number[-9:]}, not updating DB")
+                    log.warning(f"failed call atempt for {number[-9:]}, not updating DB")
                 self.counter += 1
-        return print(f"{self.counter} records updated")
+        return log.info(f"{self.counter} records updated")
 
     def establish_socket(self):
         try:
@@ -88,11 +87,12 @@ class Call:
             if 'Success' in response:
                 status = "Connected"
             else:
-                status = "Could not authenticate"              
+                log_status = status = "Could not authenticate"              
         except socket.timeout:
-            status = "Socket send timed out"
+            log_status = status = "Socket send timed out"
         except socket.error as e:
-            status = f"Socket send error: {e}"
+            log_status = status = f"Socket send error: {e}"
+        log.error(f"AMI socket establishment: {log_status}")
         return status
 
     def initiate_call(self,orignate_requests, retry=0):
@@ -105,23 +105,22 @@ class Call:
                 return "Successful"
             else:
                 if retry < 3:
-                    print("Failed to initiate call, trying again")
+                    log.warning("Failed to initiate call, trying again")
                     return self.initiate_call(our_request, retry + 1)
         except socket.timeout:
             if retry < 3:
-                print(f"Failed to send Originate request, Socket Timed out")
+                log.warning(f"Failed to send Originate request, Socket Timed out")
                 return self.initiate_call(our_request, retry + 1)
         except socket.error as e:
             if retry < 3:
-                print(f"Failed to send Originate request, Socket send error: {e}")
+                log.warning(f"Failed to send Originate request, Socket send error: {e}")
                 return self.initiate_call(our_request, retry + 1)
-        return "Maximum retries reached, call origination failed"
+        return log.error("Maximum retries reached, call origination failed")
 
     #@timerDecorator
     def call(self):
         records = DbWork().get()
         status = self.establish_socket()
-        print(status)
         if status == "Connected":
             for record in records:
                 self.check_time("call")
@@ -153,15 +152,25 @@ class Call:
                 self.counter += 1
                 time.sleep(10)
             self.sock.close()
-            return print(f"{self.counter} numbers called")
+            return log.info(f"{self.counter} numbers called")
 
 
 if __name__ == "__main__":
-    search = False
-    call = Call()
-    if len(sys.argv) > 1:
-        call.read_file()
+    log = Logger().get_logger()
+    if len(sys.argv) > 2:
+        command = sys.argv[1]
+        dialer_name = sys.argv[2]
+
+        call = Call(dialer_name)
+
+        if command == "call":
+            call.call()
+        else:
+            call.read_file()
     else:
-        call.call()   
+        log.error("Less arguments supplied")
+        exit()
+
     settings.Db.close()
+    log.info("Script's job is done, exiting")
     sys.exit(0)
