@@ -1,5 +1,6 @@
-database.sample.ini
-
+database.ini
+dbwork.py.old
+*.log*
 
 # Editors
 .vscode/

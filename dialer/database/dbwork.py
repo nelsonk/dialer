@@ -1,48 +1,91 @@
 from datetime import datetime
-from peewee import fn, chunked, NodeList, SQL
 
-from .models import record
-from configs.settings import Db, batch_size
-from configs.logs_configs import Logger
+from peewee import fn, NodeList, SQL
+
+from dialer.configs import logger
+from dialer.configs.settings import BATCH_SIZE
+
+from .crud_ops import CRUD
+from .models import CustomerRecord, Language
+
+log = logger.get_logger()
 
 
 class DbWork:
+    """
+    Prepares and processes any DB tasks
+    """
     def __init__(self):
-        self.bath_size = batch_size
-        self.log = Logger().get_logger()
+        self.crud = CRUD()
 
     def get(self):
+        """
+        Extract records
+        """
         now = datetime.now().strftime('%Y-%m-%d %H')
         now = f"{now}:00:00"
-        records = record.select(record.id, record.number, record.type, record.level, record.language).where((record.run_on == now) | (record.retry == now) | (record.run_on.is_null(True))).dicts().iterator()
-        return records
-    
-    def initial_update(self, id):
-        with Db.atomic():
-            run_on_interval = NodeList((SQL('INTERVAL'), 7, SQL('DAY')))
-            retry_on_interval = NodeList((SQL('INTERVAL'), 1, SQL('DAY')))
-            query = record.update(retry = fn.date_add(record.run_on, retry_on_interval), run_on = fn.date_add(record.run_on, run_on_interval)).where(record.id == id)
-            print(query.sql())
-            my_update = query.execute()
-        return print(my_update," record/s updated")
-    
+
+        filters = (
+            (CustomerRecord.run_on == now) |
+            (CustomerRecord.retry_on == now) |
+            (CustomerRecord.run_on.is_null(True))
+        )
+
+        columns_to_select = (
+            CustomerRecord.id,
+            CustomerRecord.phone_number,
+            CustomerRecord.campaign_type,
+            CustomerRecord.training_level,
+            Language.name.alias('customer_language_name'),
+            CustomerRecord.run_on,
+            CustomerRecord.retry_on
+        )
+
+        return self.crud.read(CustomerRecord, filters, columns_to_select, Language)
+
+    def initial_update(self, record_id, retry_on, run_on):
+        """
+        On calling number, set retry_on and run_on 1 & 7 days from now
+        """
+        retry_on_interval = NodeList((SQL('INTERVAL'), 1, SQL('DAY')))
+
+        if retry_on and retry_on < run_on:
+            filters = (CustomerRecord.id == record_id)
+            update_values = {
+                'retry_on': fn.date_add(CustomerRecord.retry_on, retry_on_interval)
+            }
+            return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
+
+        run_on_interval = NodeList((SQL('INTERVAL'), 7, SQL('DAY')))
+        filters = (CustomerRecord.id == record_id)
+        update_values = {
+            'retry_on': fn.date_add(CustomerRecord.run_on, retry_on_interval),
+            'run_on': fn.date_add(CustomerRecord.run_on, run_on_interval)
+        }
+        return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
+
     def final_update(self, my_number, my_dialer, date_or_status="successful"):
-        my_update = 0
+        """
+        On reading asterisk log file, update record basing on whether call was successful
+        """
+        filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer)
+
         if date_or_status == "successful":
-            with Db.atomic():
-                my_update = record.update(retry = None, level = record.level + 1).where((record.number == my_number) & (record.dialer == my_dialer)).execute()
-        else:
-            if date_or_status is not None:
-                with Db.atomic():
-                    my_update = record.update(run_on = date_or_status, level = 1).where((record.number == my_number) & (record.dialer == my_dialer)).execute()
-        return print(my_update," record/s updated")  
+            update_values = {'retry_on': None, 'training_level': CustomerRecord.training_level + 1}       
+            return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")    
+        update_values = {'run_on': date_or_status, 'training_level': 1}       
+        return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
     
     def insert(self, data):
+        """
+        Bulk upload numbers into DB
+        """
         if not isinstance(data, list):
-            self.log.error("Expected a list, rectify or give up")
+            log.error("Expected a list, rectify or give up")
             raise ValueError("Expected a list, rectify or give up")
-        with Db.atomic():
-            for batch in chunked(data, self.bath_size):
-                inserted = record.insert_many(batch).on_conflict_ignore().execute()
-        Db.close()
-        return print("SUCCESSFUL <br> ID of last record added is: ", inserted)
+        
+        for row in data:
+            fields_to_create = {'name': row["customer_language_id"]}
+            row["customer_language_id"] = self.crud.read_or_create(Language, **fields_to_create)
+
+        return f"SUCCESSFUL <br>: {self.crud.bulk_insert(CustomerRecord, data, BATCH_SIZE)} records added"

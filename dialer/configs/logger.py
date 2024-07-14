@@ -1,10 +1,12 @@
 import logging
-
 from logging.handlers import TimedRotatingFileHandler, RotatingFileHandler
 
-from configs.settings import access_log_file, error_log_file
+from .settings import access_log_file, error_log_file
 
 class Logger:
+    """
+    Logger configuration
+    """
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -27,7 +29,7 @@ class Logger:
             self.console_handler = logging.StreamHandler()
             self.console_handler.setLevel(logging.INFO)
 
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter('[%(asctime)s] %(levelname)s {%(pathname)s:%(lineno)d} - %(message)s')
             self.error_file_handler.setFormatter(formatter)
             self.access_file_handler.setFormatter(formatter)
             self.console_handler.setFormatter(formatter)
@@ -38,8 +40,11 @@ class Logger:
             
             self.initialized = True
 
-    def get_logger(self):
-        return self.logger
+def get_logger():
+    """
+    Return logger
+    """
+    return Logger().logger
 
 
 
