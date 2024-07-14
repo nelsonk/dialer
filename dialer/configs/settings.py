@@ -1,12 +1,12 @@
 import configparser
 import os
+from datetime import datetime
 
 from peewee import MySQLDatabase
-from datetime import datetime
 
 
 configs = configparser.ConfigParser()
-# Get the absolute path to the config file, .. send to parent dir, can use '..', '..' to go 2 dirs up
+# Get the absolute path to the config file, .. send to parent dir,can use '..', '..' to go 2 dirs up
 config_file_path = os.path.join(os.path.dirname(__file__), '..', 'database', 'database.ini')
 configs.read(config_file_path)
 
@@ -27,15 +27,18 @@ Db = MySQLDatabase(mydatabase,
                    passwd = mypassword,
                    port = myport)
 
-batch_size = 1000
+BATCH_SIZE = 1000
 
-campaign_starts_on = datetime(2024, 7, 7) #change this, start date for compaign yy, mm, dd
-dialplan_target_extension = 999     #used as target in AMI Originate cmd #create function where you pass dialer name and get target, context, logfile
-dialplan_context = "marketing_dialer"   #used as context in AMI Orignate cmd
-start_calling_at = 7
-stop_calling_at = 19
+campaign_starts_on = datetime(2024, 7, 14) #change this, start date for compaign yy, mm, dd
+DIALPLAN_TARGET_EXTENSION = 999     #used as target in AMI Originate cmd #create function where you pass dialer name and get target, context, logfile
+DIALPLAN_CONTEXT = "marketing_dialer"   #used as context in AMI Orignate cmd
+START_CALLING_AT = 7
+STOP_CALLING_AT = 19
 
 def get_dialer_specific_configs(dialer_name):
+    """
+    Return dialer specific configs
+    """
     asterisk_log_file = os.path.join(os.path.dirname(__file__), "..", "logs", f"asterisk_{dialer_name}.log")
     all_configs = {"asterisk_log_file": asterisk_log_file, "access_log_file": access_log_file, "error_log_file": error_log_file}    
     return all_configs
