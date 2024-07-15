@@ -84,6 +84,6 @@ class DbWork:
             raise ValueError("Expected a list, rectify or give up")
         
         for row in data:
-            row["customer_language_id"] = self.crud.read_or_create(Language, {'name': row["customer_language_id"]})
+            row["customer_language_id"] = self.crud.read_or_create(Language, **{'name': row["customer_language_id"]})
 
         return f"SUCCESSFUL <br>: {self.crud.bulk_insert(CustomerRecord, data, BATCH_SIZE)} records added"
