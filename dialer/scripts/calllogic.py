@@ -30,7 +30,7 @@ class Call:
         """
         current_time = datetime.now().hour
 
-        if task == "call" and current_time > settings.STOP_CALLING_AT or current_time < settings.START_CALLING_AT:
+        if (task == "call" and current_time > settings.STOP_CALLING_AT or current_time < settings.START_CALLING_AT):
             log.error("Not allowed to run at this time")
             sys.exit(1)
 
@@ -51,10 +51,8 @@ class Call:
                 log.exception("Optional Execption %s while reading %s file", e, self.log_file)
 
             if day_selected is not None and time_selected is not None:
-                delta = timedelta(days=day_selected)
-                new_date = (settings.campaign_starts_on + delta).date()
+                new_date = (settings.campaign_starts_on + timedelta(days=day_selected)).date()
                 run_on = f"{new_date} {time_selected}:00:00"
-
                 DbWork().final_update(number, self.dialer, run_on)
             elif int(duration) > 10:
                 DbWork().final_update(number, self.dialer)
@@ -82,13 +80,15 @@ class Call:
             time.sleep(0.2)
 
             if 'Success' in self.sock.recv(4096).decode():
-                return "Connected"           
+                return "Connected"  
+                     
             log.error("AMI socket establishment failed: Could not authenticate")
             return "Could not authenticate"
         
         except socket.timeout:
             log.error("AMI socket establishment failed: Socket send timed out")
-            return "Socket send timed out"        
+            return "Socket send timed out"  
+              
         except socket.error as e:
             log.error("AMI socket establishment: Socket send error %s",e)
             return "Socket send error: %s", e
@@ -112,7 +112,8 @@ class Call:
         except socket.timeout:
             if retry < 3:
                 log.warning("Failed to send Originate request, Socket Timed out")
-                return self.initiate_call(orignate_requests, retry + 1)            
+                return self.initiate_call(orignate_requests, retry + 1) 
+                       
         except socket.error as e:
             if retry < 3:
                 log.warning("Failed to send Originate request, Socket send error: %s", e)
@@ -126,10 +127,9 @@ class Call:
         """
         if self.establish_socket() == "Connected":
             for record in DbWork().get():
-                #self.check_time("call")
-                my_channel = f"Local/{str(record["phone_number"])}@from-internal"
-                log.debug("Customer language : %s", record["customer_language_name"])
+                self.check_time("call")
 
+                my_channel = f"Local/{str(record["phone_number"])}@from-internal"
                 originate_request = (
                     "Action: Originate\r\n"
                     f"Channel: {my_channel}\r\n"
@@ -144,8 +144,8 @@ class Call:
                     "Priority: 1\r\n"
                     "Async: true\r\n\r\n"
                 )
-
                 log.debug("Originate Request: %s", originate_request)
+
                 self.initiate_call(originate_request)
 
                 if int(record["training_level"]) > 0:
@@ -168,7 +168,6 @@ if __name__ == "__main__":
             call.call()           
         else:
             call.read_file()
-
     else:
         log.error("Less arguments supplied")
         sys.exit(0)

@@ -27,12 +27,11 @@ class CRUD:
         """
         if columns_to_select:
             query = model.select(*columns_to_select)
-            # Ensure the join is explicitly added
             if join_table:
                 query = query.join(join_table)
-        else:
-            query = model.select()
-
+            return query.where(filters).dicts().iterator()
+        
+        query = model.select()
         return query.where(filters).dicts().iterator()
 
     def update(self, model, filters, **kwargs):
@@ -57,9 +56,9 @@ class CRUD:
             with Db.atomic():
                 for batch in chunked(data, batch_size):
                     model.insert_many(batch).on_conflict_ignore().execute()
-
             Db.close()
             return inserted
+        
         except RuntimeError as e:
             log.exception("Exception %s:", e)
             raise e
