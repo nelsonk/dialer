@@ -12,13 +12,12 @@ class Read:
         """
         Get list from file
         """
-        file_extension = file_path.split('.')[-1].lower()
-
         with open(file_path, "r", encoding="utf-8") as our_file:
-            if file_extension == "csv":
+            if file_path.split('.')[-1].lower() == "csv":
                 self.data = csv.reader(our_file)
                 next(self.data)
-                return self.drop_empty_rows()    
+                return self.drop_empty_rows()
+               
             for line in our_file:
                 self.data.append(list(line.strip().split(',')))
             return self.drop_empty_rows()

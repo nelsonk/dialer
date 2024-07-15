@@ -22,8 +22,7 @@ class DbWork:
         """
         Extract records
         """
-        now = datetime.now().strftime('%Y-%m-%d %H')
-        now = f"{now}:00:00"
+        now = f"{datetime.now().strftime('%Y-%m-%d %H')}:00:00"
 
         filters = (
             (CustomerRecord.run_on == now) |
@@ -48,16 +47,15 @@ class DbWork:
         On calling number, set retry_on and run_on 1 & 7 days from now
         """
         retry_on_interval = NodeList((SQL('INTERVAL'), 1, SQL('DAY')))
+        filters = (CustomerRecord.id == record_id)
 
         if retry_on and retry_on < run_on:
-            filters = (CustomerRecord.id == record_id)
             update_values = {
                 'retry_on': fn.date_add(CustomerRecord.retry_on, retry_on_interval)
             }
             return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
 
         run_on_interval = NodeList((SQL('INTERVAL'), 7, SQL('DAY')))
-        filters = (CustomerRecord.id == record_id)
         update_values = {
             'retry_on': fn.date_add(CustomerRecord.run_on, retry_on_interval),
             'run_on': fn.date_add(CustomerRecord.run_on, run_on_interval)
@@ -68,11 +66,12 @@ class DbWork:
         """
         On reading asterisk log file, update record basing on whether call was successful
         """
-        filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer)
-
         if date_or_status == "successful":
+            filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer) & (CustomerRecord.retry_on != None)
             update_values = {'retry_on': None, 'training_level': CustomerRecord.training_level + 1}       
-            return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")    
+            return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated") 
+
+        filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer) 
         update_values = {'run_on': date_or_status, 'training_level': 1}       
         return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
     
@@ -85,7 +84,6 @@ class DbWork:
             raise ValueError("Expected a list, rectify or give up")
         
         for row in data:
-            fields_to_create = {'name': row["customer_language_id"]}
-            row["customer_language_id"] = self.crud.read_or_create(Language, **fields_to_create)
+            row["customer_language_id"] = self.crud.read_or_create(Language, {'name': row["customer_language_id"]})
 
         return f"SUCCESSFUL <br>: {self.crud.bulk_insert(CustomerRecord, data, BATCH_SIZE)} records added"

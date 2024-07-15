@@ -5,44 +5,66 @@ from datetime import datetime
 from peewee import MySQLDatabase
 
 
-configs = configparser.ConfigParser()
-# Get the absolute path to the config file, .. send to parent dir,can use '..', '..' to go 2 dirs up
-config_file_path = os.path.join(os.path.dirname(__file__), '..', 'database', 'database.ini')
-configs.read(config_file_path)
+#We upload heavy CSV files in batches, this sets how many records per batch
+BATCH_SIZE = 1000
 
-mydatabase = configs['dialer']['database']
-myhost = configs['dialer']['host']
-myuser = configs['dialer']['user']
-mypassword = configs['dialer']['password']
-myport = configs['dialer'].getint('port', 3306)
+"""
+The context and extension in asterisk dialplan where to send calls
+to play training module recordings. These are set in the AMI Originate request
+"""
+DIALPLAN_TARGET_EXTENSION = 999
+DIALPLAN_CONTEXT = "marketing_dialer"
+
+#When the Autodialer should start and stop, outside these hours, it can't run
+START_CALLING_AT = 7
+STOP_CALLING_AT = 19
+
+#Have listened to recording for at least these seconds to qualify to go to next training module
+SUCCESSFUL_AFTER_SECONDS = 10 
+
+"""
+This is used to automatically set date the customer should be called basing on 
+when campaign is starting. This date should be for a sunday so that if customer chooses
+option 1 for monday, we just add one day to this
+Format: (yyyy, mm, dd)
+"""
+campaign_starts_on = datetime(2024, 7, 14) 
+
+
+def get_file_path(folder_name, file_name):
+    """
+    Get file path
+    """
+    return os.path.join(os.path.dirname(__file__), "..", f"{folder_name}", f"{file_name}")
+
+
+"""
+We use configparser to read database and asterisk AMI logins from database.ini
+then establish connection to DB.
+"""
+configs = configparser.ConfigParser()
+configs.read(get_file_path("database", "database.ini"))
+
+Db = MySQLDatabase(configs['dialer']['database'],
+                   host = configs['dialer']['host'],
+                   user = configs['dialer']['user'],
+                   passwd = configs['dialer']['password'],
+                   port = configs['dialer'].getint('port', 3306))
 
 ami_username = configs['ami']['username']
 ami_password = configs['ami']['password']
 ami_port = configs['ami']['port']
 ami_server = configs['ami']['server']
 
-Db = MySQLDatabase(mydatabase,
-                   host = myhost,
-                   user = myuser,
-                   passwd = mypassword,
-                   port = myport)
+#Getting path to the log files
+access_log_file = get_file_path("logs", "access.log")
+error_log_file = get_file_path("logs", "error.log")
 
-BATCH_SIZE = 1000
-
-campaign_starts_on = datetime(2024, 7, 14) #change this, start date for compaign yy, mm, dd
-DIALPLAN_TARGET_EXTENSION = 999     #used as target in AMI Originate cmd #create function where you pass dialer name and get target, context, logfile
-DIALPLAN_CONTEXT = "marketing_dialer"   #used as context in AMI Orignate cmd
-START_CALLING_AT = 7
-STOP_CALLING_AT = 19
 
 def get_dialer_specific_configs(dialer_name):
     """
-    Return dialer specific configs
+    Return dialer specific configs mostly the log file asterisk writes to the customer 
+    chose of when to be called and length of call which are based on to move customer
+    from one training module to another
     """
-    asterisk_log_file = os.path.join(os.path.dirname(__file__), "..", "logs", f"asterisk_{dialer_name}.log")
-    all_configs = {"asterisk_log_file": asterisk_log_file, "access_log_file": access_log_file, "error_log_file": error_log_file}    
-    return all_configs
-
-access_log_file = os.path.join(os.path.dirname(__file__), '..', 'logs', "access.log")
-error_log_file = os.path.join(os.path.dirname(__file__), '..', 'logs', "error.log")
-
+    return {"asterisk_log_file": get_file_path("logs", f"asterisk_{dialer_name}.log")}
