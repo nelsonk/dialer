@@ -18,7 +18,7 @@ class DbWork:
     def __init__(self):
         self.crud = CRUD()
 
-    def get(self):
+    def get(self, dialer_name):
         """
         Extract records
         """
@@ -27,7 +27,8 @@ class DbWork:
         filters = (
             (CustomerRecord.run_on == now) |
             (CustomerRecord.retry_on == now) |
-            (CustomerRecord.run_on.is_null(True))
+            (CustomerRecord.run_on.is_null(True)) &
+            (CustomerRecord.dialer_name == dialer_name)
         )
 
         columns_to_select = (

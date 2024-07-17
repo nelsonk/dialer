@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import sys
 
 from dialer.configs import logger
@@ -27,12 +28,15 @@ class Upload:
         log.info(DbWork().insert(self.records_list))
 
 
-if __name__ == "__main__":
-    try:
-        file = sys.argv[1]
-        dialer_name = sys.argv[2]
-    except Exception as e:
-        log.exception("Exception %s:", e)
-        raise e
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dialer", help="Specify name of autodialer", type=str)
+    parser.add_argument("csv", help="Full path to csv file to upload")
 
-    Upload(file, dialer_name).db_upload()
+    Upload(parser.parse_args().csv, parser.parse_args().dialer).db_upload()
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+    

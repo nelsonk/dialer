@@ -17,7 +17,7 @@ DIALPLAN_CONTEXT = "marketing_dialer"
 
 #When the Autodialer should start and stop, outside these hours, it can't run
 START_CALLING_AT = 7
-STOP_CALLING_AT = 19
+STOP_CALLING_AT = 23
 
 #Have listened to recording for at least these seconds to qualify to go to next training module
 SUCCESSFUL_AFTER_SECONDS = 10 
@@ -35,7 +35,19 @@ def get_file_path(folder_name, file_name):
     """
     Get file path
     """
-    return os.path.join(os.path.dirname(__file__), "..", f"{folder_name}", f"{file_name}")
+    file_path = os.path.join(os.getcwd(), f"{folder_name}", f"{file_name}")
+
+    # Ensure the directory exists
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+
+    # Ensure the file exists
+    if not os.path.exists(file_path):
+        with open(file_path, 'w') as f:
+            pass  # Create an empty file
+
+    return file_path
 
 
 """

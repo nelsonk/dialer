@@ -15,9 +15,8 @@ It involves using peewee to manage all database interactions, sockets for connec
 
 - Upload customer campaign details to database
 - Auto call customers
-- Redirect customer call to custom asterisk dialplan to play training audio
+- Redirect customer call to a custom asterisk dialplan to play training audio
 - Move customer through the training modules depending on whether they successfully listened to previous module
-- Retry failed calls at same time throughout the week till successful
 
 
 ## Installation
@@ -27,27 +26,35 @@ Requirements:
   python 3.6+
 ```
 
-Install these modules:
+Install package:
 ```bash
-pip install peewee
-pip install pymysql
+pip install dialer
 ```
 
+Post installation script:
+
+Run post install setup script from a directory from which you will be running all usage commands, from now on, we shall refer to this folder as ```root_folder```.
+```bash
+python3 dialer_setup dialer_name
+```
+- Change ```dialer_name``` to the name for the autodialer. This same name should be used on all usage commands. 
+- This will create a settings.py file and database/database.ini and logs/asterisk_```dialer_name``` in this ```root_folder```
+- It will also add cronjobs to run calling feature at top of every hour from 7am to 9pm. Runs script to update DB using asterisk_dialer_name.log at 10pm. You may edit it in your crontab
+- You can run command again in same ```root_folder``` with different dialer_name to setup another autodialer.
 
 Asterisk AMI & Database:
 
-- Add your database and AMI credentials in database.ini file
-- If these scripts are not running on same server having AMI & DB, make sure remote access is allowed.
-- Variables; clid (phone_number), dialer (name of autodialer), language, level (level of training whose recordings you should play, 0 is for week recording about when customer wants to be called), type (type of campaign incase one dialer is used for multiple campaigns)
+- Add your database and AMI credentials to ```root_folder```/database/database.ini file
+
 
 Settings: 
 
-Go to configs/seetings.py to make changes to settings like:
+Go to ```root_folder```/settings.py to make changes to settings like:
 
 - Time frame script is allowed to call customers
-- Path to asterisk_log file
 - When campaign is supposed to start, this determines when customer calls are to be scheduled
-- You dialplan context & target where customer calls are supposed to sent on pickup, which should contain the logic for playing recordings etc
+- You dialplan context & target where customer calls are supposed to be sent on pickup, which should contain the logic for playing recordings etc
+
 
 ## Usage/Examples
 
@@ -56,31 +63,24 @@ Have your frontend application upload .csv file with columns in this order; phon
 - Training_level of 0 is auto assigned on initial upload
 - First row is ignored, assumed to be for column names even though they're optional
 
-Have your application execute this script with full path to location of uploaded file and name of autodialer.
+Have your application execute this command with full path to uploaded file and ```dialer_name``` used at setup.
 
 - The uploaded file is meant to be deleted by this script after reading it, make sure parent folder has (wx) permissions.
-Example:
+Command:
 
 ```bash
-python3 upload.py /var/www/html/customer.csv finance_dialer
+cd root_folder && python3 upload_to_dialer full_path_csv_file.csv dialer_name
 ```
 
 - This script will read numbers from csv and upload to database.
 
-Create cronjob that executes the calling script at top of hour to call all customers scheduled for that day that hour
+## Asterisk Setup
 
-Example:
+- Variables; ```clid``` (phone_number), ```dialer``` (name of autodialer), ```language``` (customer language), ```level``` (level of training whose recordings you should play, 0 is for recording about when customer wants to be called), ```type``` (type of campaign incase one dialer is used for multiple campaigns) shall be sent on the AMI Orignate request, use them in your asterisk custom dialplan
+- Set your asterisk custom dialplan to write to ```root_folder```/logs/asterisk_```dialer_name```.log on call hangup, in this format;
 
-```
-0 7-18 * * * /usr/bin/python3 calllogic.py call dialer_name
-```
+    ```phone_number```, ```duration_of_call``` (in seconds), ```day_they_prefer_to_be_called``` (i.e 1 for Monday, 2 for Tue etc), ```time_they_prefer_to_be_called``` (i.e 8 for 8am, 14 for 2pm)
 
-Create a cronjob that runs script that checks log file to see if a number was called and listened to a training recording for at least a specific number of seconds.
+    Example: ```259790551930, 40, 3, 13```
 
-Example:
-```
-0 22 * * * /usr/bin/python3 calllogic.py update dialer_name
-```
-
-
-
+- The last two should only be written at the beginning when customers are choose when to be called.

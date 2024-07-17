@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import socket
 import sys
 import time
@@ -126,7 +127,7 @@ class Call:
         Where all calling logic comes together
         """
         if self.establish_socket() == "Connected":
-            for record in DbWork().get():
+            for record in DbWork().get(self.dialer):
                 self.check_time("call")
 
                 my_channel = f"Local/{str(record["phone_number"])}@from-internal"
@@ -158,20 +159,22 @@ class Call:
             log.info("%s numbers called", self.counter)
 
 
-if __name__ == "__main__":
-    if len(sys.argv) > 2:
-        command = sys.argv[1]
-        autodialer_name = sys.argv[2]
-        call = Call(autodialer_name)
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dialer", help="Specify name of autodialer as one word i.e overdue")
+    parser.add_argument("-c", "--call", help="To invoke calling feature otherwise it will read asterisk log file", action="store_true")
 
-        if command == "call":
-            call.call()           
-        else:
-            call.read_file()
+    call = Call(parser.parse_args().dialer)
+
+    if parser.parse_args().call:
+        call.call()           
     else:
-        log.error("Less arguments supplied")
-        sys.exit(0)
+        call.read_file()
 
     settings.Db.close()
     log.info("Script's job is done, exiting")
     sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

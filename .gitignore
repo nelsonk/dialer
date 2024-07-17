@@ -1,6 +1,7 @@
 database.ini
 dbwork.py.old
 *.log*
+test.py
 
 # Editors
 .vscode/
