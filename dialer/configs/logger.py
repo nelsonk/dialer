@@ -20,9 +20,14 @@ class Logger:
             self.logger = logging.getLogger(__name__)
             self.logger.setLevel(logging.DEBUG)
 
-            self.error_file_handler = RotatingFileHandler(error_log_file, maxBytes=500*1024*1024, backupCount=3)
+            self.error_file_handler = RotatingFileHandler(error_log_file, 
+                                                          maxBytes=500*1024*1024, 
+                                                          backupCount=3)
             self.error_file_handler.setLevel(logging.ERROR)
-            self.access_file_handler = TimedRotatingFileHandler(access_log_file, when="midnight", interval=2, backupCount=3)
+            self.access_file_handler = TimedRotatingFileHandler(access_log_file, 
+                                                                when="midnight", 
+                                                                interval=2, 
+                                                                backupCount=3)
             self.access_file_handler.setLevel(logging.DEBUG)
             self.console_handler = logging.StreamHandler()
             self.console_handler.setLevel(logging.INFO)

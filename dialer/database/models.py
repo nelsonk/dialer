@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from peewee import Model, CharField, ForeignKeyField, IntegerField, DateTimeField, SQL, AutoField
 
@@ -22,6 +23,7 @@ class Language(BaseModel):
     """
     customer_language_id = AutoField()
     name = CharField(max_length=50)
+    created_on = DateTimeField(default=datetime.now)
 
     class Meta:
         """
@@ -42,6 +44,8 @@ class CustomerRecord(BaseModel):
     training_level = IntegerField()
     retry_on = DateTimeField(null=True)
     run_on = DateTimeField(null=True)
+    created_on = DateTimeField(default=datetime.now)
+    updated_on = DateTimeField(default=datetime.now)
 
     class Meta:
         """

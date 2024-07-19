@@ -18,8 +18,11 @@ class Upload:
         self.records_list = []
 
         for row in files.Read().get_list_from(uploaded_file):
-            self.records_list.append({"phone_number": row[0], "dialer_name": autodialer_name, 
-                                      "customer_language_id": row[1], "campaign_type": row[2], "training_level": 0})
+            self.records_list.append({"phone_number": row[0], 
+                                      "dialer_name": autodialer_name, 
+                                      "customer_language_id": row[1], 
+                                      "campaign_type": row[2], 
+                                      "training_level": 0})
                 
     def db_upload(self):
         """

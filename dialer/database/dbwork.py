@@ -52,14 +52,16 @@ class DbWork:
 
         if retry_on and retry_on < run_on:
             update_values = {
-                'retry_on': fn.date_add(CustomerRecord.retry_on, retry_on_interval)
+                'retry_on': fn.date_add(CustomerRecord.retry_on, retry_on_interval),
+                'updated_on': datetime.now
             }
             return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
 
         run_on_interval = NodeList((SQL('INTERVAL'), 7, SQL('DAY')))
         update_values = {
             'retry_on': fn.date_add(CustomerRecord.run_on, retry_on_interval),
-            'run_on': fn.date_add(CustomerRecord.run_on, run_on_interval)
+            'run_on': fn.date_add(CustomerRecord.run_on, run_on_interval),
+            'updated_on': datetime.now
         }
         return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
 
@@ -69,11 +71,18 @@ class DbWork:
         """
         if date_or_status == "successful":
             filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer) & (CustomerRecord.retry_on != None)
-            update_values = {'retry_on': None, 'training_level': CustomerRecord.training_level + 1}       
+            update_values = {
+                'retry_on': None, 'training_level': CustomerRecord.training_level + 1,
+                'updated_on': datetime.now
+                }       
             return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated") 
 
         filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer) 
-        update_values = {'run_on': date_or_status, 'training_level': 1}       
+        update_values = {
+            'run_on': date_or_status, 
+            'training_level': 1,
+            'updated_on': datetime.now
+            }       
         return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
     
     def insert(self, data):

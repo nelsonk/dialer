@@ -31,7 +31,9 @@ class Call:
         """
         current_time = datetime.now().hour
 
-        if (task == "call" and current_time > settings.STOP_CALLING_AT or current_time < settings.START_CALLING_AT):
+        if (task == "call" and 
+            current_time > settings.STOP_CALLING_AT or 
+            current_time < settings.START_CALLING_AT):
             log.error("Not allowed to run at this time")
             sys.exit(1)
 
@@ -162,7 +164,9 @@ class Call:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("dialer", help="Specify name of autodialer as one word i.e overdue")
-    parser.add_argument("-c", "--call", help="To invoke calling feature otherwise it will read asterisk log file", action="store_true")
+    parser.add_argument("-c", "--call", 
+                        help="To invoke calling feature otherwise it will read asterisk log file", 
+                        action="store_true")
 
     call = Call(parser.parse_args().dialer)
 
