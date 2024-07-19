@@ -35,7 +35,7 @@ Post installation script:
 
 Run post install setup script from a directory from which you will be running all usage commands, from now on, we shall refer to this folder as ```root_folder```.
 ```bash
-python3 dialer_setup dialer_name
+dialer_setup dialer_name
 ```
 - Change ```dialer_name``` to the name for the autodialer. This same name should be used on all usage commands. 
 - This will create a settings.py file and database/database.ini and logs/asterisk_```dialer_name``` in this ```root_folder```
@@ -69,7 +69,7 @@ Have your application execute this command with full path to uploaded file and `
 Command:
 
 ```bash
-cd root_folder && python3 upload_to_dialer full_path_csv_file.csv dialer_name
+cd root_folder && upload_to_dialer full_path_csv_file.csv dialer_name
 ```
 
 - This script will read numbers from csv and upload to database.

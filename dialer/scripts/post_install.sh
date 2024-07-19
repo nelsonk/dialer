@@ -24,7 +24,7 @@ fi
 
 # Install cron jobs
 (crontab -l ; echo "#Training AutoDialer calling and DB updating scripts for $DIALER_NAME Dialer") | crontab -
-(crontab -l ; echo "0 7-21 * * * cd $(pwd) && $(which python3) run_dialer --call $DIALER_NAME") | crontab -
-(crontab -l ; echo "0 22 * * * cd $(pwd) && $(which python3) run_dialer $DIALER_NAME && mv $(pwd)/logs/asterisk_$DIALER_NAME.log $(pwd)/logs/asterisk_$DIALER_NAME.log.bak && > $(pwd)/logs/asterisk_$DIALER_NAME.log") | crontab -
+(crontab -l ; echo "0 7-21 * * * cd $(pwd) && run_dialer --call $DIALER_NAME") | crontab -
+(crontab -l ; echo "0 22 * * * cd $(pwd) && run_dialer $DIALER_NAME && mv $(pwd)/logs/asterisk_$DIALER_NAME.log $(pwd)/logs/asterisk_$DIALER_NAME.log.bak && > $(pwd)/logs/asterisk_$DIALER_NAME.log") | crontab -
 
 echo "Post-installation setup tasks completed."

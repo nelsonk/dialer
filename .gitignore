@@ -2,6 +2,8 @@ database.ini
 dbwork.py.old
 *.log*
 test.py
+*.setup.*
+setup.setup.py
 
 # Editors
 .vscode/
