@@ -132,15 +132,15 @@ class Call:
             for record in DbWork().get(self.dialer):
                 self.check_time("call")
 
-                my_channel = f"Local/{str(record["phone_number"])}@from-internal"
+                my_channel = f"Local/{str(record['phone_number'])}@from-internal"
                 originate_request = (
                     "Action: Originate\r\n"
                     f"Channel: {my_channel}\r\n"
-                    f"Variable: clid={str(record["phone_number"])}\r\n"
+                    f"Variable: clid={str(record['phone_number'])}\r\n"
                     f"Variable: dialer={self.dialer}\r\n"
-                    f"Variable: language={record["customer_language_name"]}\r\n"
-                    f"Variable: level={record["training_level"]}\r\n"
-                    f"Variable: type={record["campaign_type"]}\r\n"
+                    f"Variable: language={record['customer_language_name']}\r\n"
+                    f"Variable: level={record['training_level']}\r\n"
+                    f"Variable: type={record['campaign_type']}\r\n"
                     "Callerid: \r\n"
                     f"Exten: {settings.DIALPLAN_TARGET_EXTENSION}\r\n"
                     f"Context: {settings.DIALPLAN_CONTEXT}\r\n"
