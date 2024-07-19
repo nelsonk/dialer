@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dialer"
-version = "0.1.8"
+version = "0.2.0"
 description = "Automate customer trainings over the phone with no human intervention."
 authors = ["Nelson Kanyali <nelskon@gmail.com>"]
 readme = "README.md"
