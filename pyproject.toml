@@ -11,7 +11,7 @@ repository = "https://github.com/nelsonk/dialer"
 [tool.poetry.dependencies]
 python = ">=3.7"
 peewee = "*"
-pymysql = "*"
+pymysql = ">=1.1.1"
 
 
 [tool.poetry.scripts]
