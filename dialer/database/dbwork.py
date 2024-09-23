@@ -28,7 +28,8 @@ class DbWork:
             (CustomerRecord.run_on == now) |
             (CustomerRecord.retry_on == now) |
             (CustomerRecord.run_on.is_null(True)) &
-            (CustomerRecord.dialer_name == dialer_name)
+            (CustomerRecord.dialer_name == dialer_name) &
+            (CustomerRecord.failed_weeks < 4)
         )
 
         columns_to_select = (
@@ -41,7 +42,12 @@ class DbWork:
             CustomerRecord.retry_on
         )
 
-        return self.crud.read(CustomerRecord, filters, columns_to_select, Language)
+        return self.crud.read(
+            CustomerRecord,
+            filters,
+            columns_to_select,
+            Language
+        )
 
     def initial_update(self, record_id, retry_on, run_on):
         """
@@ -52,10 +58,18 @@ class DbWork:
 
         if retry_on and retry_on < run_on:
             update_values = {
-                'retry_on': fn.date_add(CustomerRecord.retry_on, retry_on_interval),
+                'retry_on': fn.date_add(
+                    CustomerRecord.retry_on,
+                    retry_on_interval
+                ),
                 'updated_on': datetime.now()
             }
-            return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
+
+            return print(f"{self.crud.update(
+                CustomerRecord,
+                filters,
+                **update_values
+            )} record/s updated")
 
         run_on_interval = NodeList((SQL('INTERVAL'), 7, SQL('DAY')))
         update_values = {
@@ -63,28 +77,80 @@ class DbWork:
             'run_on': fn.date_add(CustomerRecord.run_on, run_on_interval),
             'updated_on': datetime.now()
         }
-        return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
+
+        return print(f"{self.crud.update(
+            CustomerRecord,
+            filters,
+            **update_values
+        )} record/s updated")
 
     def final_update(self, my_number, my_dialer, date_or_status="successful"):
         """
-        On reading asterisk log file, update record basing on whether call was successful
+        On reading asterisk log file, update record basing on
+        whether call was successful
         """
         if date_or_status == "successful":
-            filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer) & (CustomerRecord.retry_on != None)
+            filters = (
+                (CustomerRecord.phone_number == my_number) &
+                (CustomerRecord.dialer_name == my_dialer) &
+                (CustomerRecord.retry_on != None )
+            )
             update_values = {
-                'retry_on': None, 'training_level': CustomerRecord.training_level + 1,
+                'retry_on': None,
+                'training_level': CustomerRecord.training_level + 1,
+                'failed_weeks': 0,
                 'updated_on': datetime.now()
-                }       
-            return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated") 
+                }
 
-        filters = (CustomerRecord.phone_number == my_number) & (CustomerRecord.dialer_name == my_dialer) 
-        update_values = {
-            'run_on': date_or_status, 
-            'training_level': 1,
-            'updated_on': datetime.now()
-            }       
-        return print(f"{self.crud.update(CustomerRecord, filters, **update_values)} record/s updated")
-    
+            return print(f"{self.crud.update(
+                CustomerRecord,
+                filters,
+                **update_values
+            )} record/s updated")
+
+        elif(date_or_status == "Failed"):
+            filters = (
+                (CustomerRecord.phone_number == my_number) &
+                (CustomerRecord.dialer_name == my_dialer) &
+                (CustomerRecord.retry_on >= CustomerRecord.run_on)
+            )
+            update_values = {
+                'retry_on': None,
+                'training_level': CustomerRecord.training_level + 1,
+                'failed_weeks': CustomerRecord.failed_weeks + 1,
+                'updated_on': datetime.now()
+                }
+
+            updated = self.crud.update(
+                CustomerRecord,
+                filters,
+                **update_values
+            )
+
+            if updated > 0:
+                log.info(
+                    f"{my_number} moved to next module after a week of failure"
+                )
+
+            return print(f"{updated} records updated")
+
+        else:
+            filters = (
+                (CustomerRecord.phone_number == my_number) &
+                (CustomerRecord.dialer_name == my_dialer)
+            )
+            update_values = {
+                'run_on': date_or_status,
+                'training_level': 1,
+                'updated_on': datetime.now()
+                }
+
+            return print(f"{self.crud.update(
+                CustomerRecord,
+                filters,
+                **update_values
+            )} record/s updated")
+
     def insert(self, data):
         """
         Bulk upload numbers into DB
@@ -92,8 +158,15 @@ class DbWork:
         if not isinstance(data, list):
             log.error("Expected a list, rectify or give up")
             raise ValueError("Expected a list, rectify or give up")
-        
-        for row in data:
-            row["customer_language_id"] = self.crud.read_or_create(Language, **{'name': row["customer_language_id"]})
 
-        return f"SUCCESSFUL <br>: {self.crud.bulk_insert(CustomerRecord, data, BATCH_SIZE)} records added"
+        for row in data:
+            row["customer_language_id"] = self.crud.read_or_create(
+                Language,
+                **{'name': row["customer_language_id"]}
+            )
+
+        return f"SUCCESSFUL <br>: {self.crud.bulk_insert(
+            CustomerRecord,
+            data,
+            BATCH_SIZE
+        )} records added"

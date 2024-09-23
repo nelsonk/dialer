@@ -37,9 +37,10 @@ Run post install setup script from a directory from which you will be running al
 ```bash
 dialer_setup dialer_name
 ```
-- Change ```dialer_name``` to the name for the autodialer. This same name should be used on all usage commands. 
+- Change ```dialer_name``` to the name for the autodialer. This same name should be used on all usage commands.
 - This will create a settings.py file and database/database.ini and logs/asterisk_```dialer_name``` in this ```root_folder```
 - It will also add cronjobs to run calling feature at top of every hour from 7am to 9pm. Runs script to update DB using asterisk_dialer_name.log at 10pm. You may edit it in your crontab
+- The calling script doesn't call customers who have taken 4 or more consecutive weeks without picking our calls
 - You can run command again in same ```root_folder``` with different dialer_name to setup another autodialer.
 
 Asterisk AMI & Database:
@@ -47,7 +48,7 @@ Asterisk AMI & Database:
 - Add your database and AMI credentials to ```root_folder```/database/database.ini file
 
 
-Settings: 
+Settings:
 
 Go to ```root_folder```/settings.py to make changes to settings like:
 
@@ -69,7 +70,7 @@ Have your application execute this command with full path to uploaded file and `
 Command:
 
 ```bash
-cd root_folder && upload_to_dialer full_path_csv_file.csv dialer_name
+cd root_folder && upload_to_dialer dialer_name full_path_csv_file.csv
 ```
 
 - This script will read numbers from csv and upload to database.

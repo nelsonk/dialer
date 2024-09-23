@@ -19,16 +19,17 @@ DIALPLAN_CONTEXT = "marketing_dialer"
 START_CALLING_AT = 7
 STOP_CALLING_AT = 23
 
-#Have listened to recording for at least these seconds to qualify to go to next training module
-SUCCESSFUL_AFTER_SECONDS = 10 
+#Have listened to recording for at least these seconds to qualify to go to
+# next training module
+SUCCESSFUL_AFTER_SECONDS = 10
 
 """
-This is used to automatically set date the customer should be called basing on 
-when campaign is starting. This date should be for a sunday so that if customer chooses
-option 1 for monday, we just add one day to this
+This is used to automatically set date the customer should be called basing on
+when campaign is starting. This date should be for a sunday so that if
+customer chooses option 1 for monday, we just add one day to this
 Format: (yyyy, mm, dd)
 """
-campaign_starts_on = datetime(2024, 7, 14) 
+campaign_starts_on = datetime(2024, 9, 22)
 
 
 def get_file_path(folder_name, file_name):
@@ -47,6 +48,8 @@ def get_file_path(folder_name, file_name):
         with open(file_path, 'w') as f:
             pass  # Create an empty file
 
+    print(file_path)
+
     return file_path
 
 
@@ -57,11 +60,13 @@ then establish connection to DB.
 configs = configparser.ConfigParser()
 configs.read(get_file_path("database", "database.ini"))
 
-Db = MySQLDatabase(configs['dialer']['database'],
-                   host = configs['dialer']['host'],
-                   user = configs['dialer']['user'],
-                   passwd = configs['dialer']['password'],
-                   port = configs['dialer'].getint('port', 3306))
+Db = MySQLDatabase(
+    configs['dialer']['database'],
+    host = configs['dialer']['host'],
+    user = configs['dialer']['user'],
+    passwd = configs['dialer']['password'],
+    port = int(configs['dialer'].get('port', '3306'))
+)
 
 ami_username = configs['ami']['username']
 ami_password = configs['ami']['password']
@@ -75,8 +80,11 @@ error_log_file = get_file_path("logs", "error.log")
 
 def get_dialer_specific_configs(dialer_name):
     """
-    Return dialer specific configs mostly the log file asterisk writes to the customer 
-    chose of when to be called and length of call which are based on to move customer
-    from one training module to another
+    Return dialer specific configs mostly the log file asterisk writes to
+    the customer chose of when to be called and length of call which are
+    based on to move customer from one training module to another
     """
-    return {"asterisk_log_file": get_file_path("logs", f"asterisk_{dialer_name}.log")}
+    return {"asterisk_log_file": get_file_path(
+        "logs",
+        f"asterisk_{dialer_name}.log"
+    )}

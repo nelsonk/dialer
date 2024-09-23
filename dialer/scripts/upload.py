@@ -18,12 +18,14 @@ class Upload:
         self.records_list = []
 
         for row in files.Read().get_list_from(uploaded_file):
-            self.records_list.append({"phone_number": row[0], 
-                                      "dialer_name": autodialer_name, 
-                                      "customer_language_id": row[1], 
-                                      "campaign_type": row[2], 
-                                      "training_level": 0})
-                
+            run_on = f"{row[3]} {row[4]}"
+            self.records_list.append({"phone_number": row[0],
+                                      "dialer_name": autodialer_name,
+                                      "customer_language_id": row[1],
+                                      "campaign_type": row[2],
+                                      "run_on": run_on,
+                                      "training_level": 1})
+
     def db_upload(self):
         """
         Upload to DB
@@ -42,4 +44,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

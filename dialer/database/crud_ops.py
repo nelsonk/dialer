@@ -13,6 +13,11 @@ class CRUD:
     Handle crud operations
     """
     def __init__(self):
+        if not Db.is_closed():
+            print("Database is already connected.")
+        else:
+            print("Connecting to the database...")
+            Db.connect()
         Db.create_tables([CustomerRecord, Language])
 
     def create(self, model, **kwargs):
@@ -20,17 +25,17 @@ class CRUD:
         Create record
         """
         return model.create(**kwargs)
-    
+
     def read(self, model, filters, columns_to_select=None, join_table = None):
         """
-        Read all or specific columns 
+        Read all or specific columns
         """
         if columns_to_select:
             query = model.select(*columns_to_select)
             if join_table:
                 query = query.join(join_table)
             return query.where(filters).dicts().iterator()
-        
+
         query = model.select()
         return query.where(filters).dicts().iterator()
 
@@ -38,14 +43,14 @@ class CRUD:
         """
         Update records
         """
-        return f'{model.update(**kwargs).where(filters).execute()} Record(s) Updated'
+        return model.update(**kwargs).where(filters).execute()
 
     #@staticmethod
     def delete(self, model, filters):
         """
         Delete record
         """
-        return f'{model.delete().where(filters).execute()} Record(s) deleted'
+        return model.delete().where(filters).execute()
 
     def bulk_insert(self, model, data, batch_size):
         """
@@ -58,14 +63,14 @@ class CRUD:
                     model.insert_many(batch).on_conflict_ignore().execute()
             Db.close()
             return inserted
-        
+
         except RuntimeError as e:
             log.exception("Exception %s:", e)
             raise e
-    
+
     def read_or_create(self, model, **kwargs):
         """
         Read or create, return record
         """
-        instance, _ = model.get_or_create(**kwargs) #using _ to ignore second value
+        instance, _ = model.get_or_create(**kwargs)
         return instance
